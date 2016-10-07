@@ -14,10 +14,30 @@
 	}
 
 	function log() {
-		console.log && console.log(_.toArray(arguments));
+		w.console || {log:function(){}};
+
+		var a = _.toArray(arguments);
+
+		if('I' == _es.browser[0]) {
+			console.log(JSON.stringify(a));
+		} else {
+			console.log(a);
+		}		
+	}
+
+	function browser() {
+		var m=document.documentMode,a=navigator.userAgent,
+		b=_.find({'Chrome/':'C','Safari/':'S','Firefox/':'F','OPR':'O','Opera':'O','Trident/':'I','MSIE':'I'},function(x,y){return a.indexOf(y)>-1})||'N',
+		v=_.find({'Trident/4.0':8,'Trident/5.0':9,'Trident/6.0':10,'Trident/7.0':11},function(x,y){return a.indexOf(y)>-1})||7;
+		return b=='I'?(m?['I',v,m]:['I',7,7]):[b,99,99];
 	}
 
 	_es.log = log;
+	_es.browser = browser();
+
+	_es.controller = function(name, fn) {
+		w[name] = fn();
+	};
 
 	_es.loading = function() {
 		var _c = 0, _m = '로딩중...';
@@ -32,6 +52,7 @@
 			init();
 
 			_c++;
+
 			setTimeout(function(){
 				_c && $('#ui-loading').css('display','block')
 			}, 1);
@@ -39,6 +60,7 @@
 
 		function off() {
 			_c--;
+
 			if(_c<1){
 				_c=0;
 				$('#ui-loading').css('display','none');
@@ -174,8 +196,50 @@
 			request:request
 		};
 	}();
-	
-	
+
+	_es.wpopup = function() {
+		function open(url, name, param, option) {
+			window.popupParam = window.popupParam||{};
+			window.popupParam[name] = param;
+			option=_.extend({width:'667',height:'650',left:'0',top:'0',scrollbars:'yes',resizable:'yes',menubar:'no',location:'no',status:'no',toolbar:'no'},option);
+			option.left = (screen.availWidth - option.width) / 2;
+			option.top = (screen.availHeight - option.height) / 2;
+			return window.open(url,name,_.map(option, function(v,k){return k+'='+v;}).join(','));
+		}
+		
+		function close() {
+			window.open('about:blank','_self').close();
+		}
+
+		function getParam() {
+			return(window.opener&&window.opener.popupParam&&window.opener.popupParam[window.name])||{};
+		}
+		
+		return {
+			open:open
+		  , close:close
+		  , getParam:getParam
+		};
+	}();
+
+	_es.alert = function(msg, id) {
+		var d=$.Deferred();
+		alert(msg);
+		d.resolve(true);
+		return d.promise();
+	};
+
+	_es.confirm = function(msg, id) {
+		var d=$.Deferred();
+
+		if(confirm(msg)) {
+			d.resolve(true);
+		} else {
+			d.resolve(false);
+		}
+
+		return d.promise();
+	};
 
 	///////////////////////////// util start ///////////////////////////////////////
 	_es.util = {
